@@ -1,0 +1,3 @@
+[submodule "asp-planning-benchmarks"]
+	path = asp-planning-benchmarks
+	url = https://github.com/potassco/asp-planning-benchmarks.git
