@@ -10,13 +10,14 @@ def run_dependency():
     facts = project_dir.joinpath("asp-planning-benchmarks/HanoiTower/0004-hanoi_tower-60-0.asp")
     asp_files = [encoding, facts]
 
-    ctl = clingo.Control()
+    ctl = graph.dependency_graph.ctl
     for asp_file in asp_files:
         ctl.load(str(asp_file))
 
-    dependency_graph = graph.DependencyGraph()
-    dependency_graph.parse_dependencies(ctl)
-    dependency_graph.encode_atoms()
+    dependency_graph = graph.dependency_graph
+    dependency_graph.parse_dependencies()
+    # dependency_graph.encode_atoms()
+    print(dependency_graph.graph)
 
 
 if __name__ == "__main__":
