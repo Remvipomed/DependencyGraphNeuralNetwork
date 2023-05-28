@@ -20,30 +20,45 @@ class DependencyObserver(clingo.Observer):
 
 class DependencyGraph:
 
-    def __init__(self, ctl):
-        self.ctl = ctl
+    def __init__(self):
         self.graph = nx.DiGraph()
-        self.atom_set = set()
+        self.atom_set = {None}
         self.atom_labels = dict()
         self.encoder = OneHotEncoder()
 
         self.observer = DependencyObserver()
-        self.ctl.register_observer(self.observer)
 
-    def parse_dependencies(self):
-        self.ctl.ground()
+    def parse_dependencies(self, ctl: clingo.Control):
+        ctl.register_observer(self.observer)
+        ctl.ground()
+
         self.graph = self.observer.graph
+        nx.set_node_attributes(self.graph, None, "type")
 
-        for atom in self.ctl.symbolic_atoms:
+        rule_nodes = list()
+        fact_nodes = list()
+
+        for atom in ctl.symbolic_atoms:
             name = atom.symbol.name
             self.atom_set.add(name)
-            self.graph.add_node(atom.literal, label=name)
+            if atom.literal in self.graph.nodes:
+                rule_nodes.append(name)
+            else:
+                fact_nodes.append(name)
+            self.graph.add_node(atom.literal)
+            self.graph.nodes[atom.literal]["type"] = name
 
+        ctl.solve(on_model=self.determine_labels)
+
+    def determine_labels(self, model):
+        for literal in self.graph.nodes:
+            self.graph.nodes[literal]["label"] = model.is_true(literal)
+
+    def encode_atoms(self):
         atom_array = np.array(list(self.atom_set)).reshape(-1, 1)
         self.encoder.fit(atom_array)
 
-    def encode_atoms(self):
-        labels = [attributes["label"] for _, attributes in self.graph.nodes.data()]
+        labels = [attributes["type"] for _, attributes in self.graph.nodes.data()]
         label_array = np.array(labels).reshape(-1, 1)
         features = self.encoder.transform(label_array)
 
@@ -51,10 +66,9 @@ class DependencyGraph:
             node = self.graph.nodes[node_id]
             node["feature"] = features[i]
 
-    def search_atom(self, literal):
-        for atom in self.ctl.symbolic_atoms:
-            if atom.literal == literal:
-                return atom
 
-
-dependency_graph = DependencyGraph(clingo.Control())
+def create_dependency_graph(ctl: clingo.Control) -> DependencyGraph:
+    dependency_graph = DependencyGraph()
+    dependency_graph.parse_dependencies(ctl)
+    dependency_graph.encode_atoms()
+    return dependency_graph
