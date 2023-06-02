@@ -52,7 +52,8 @@ class DependencyGraph:
 
     def determine_labels(self, model):
         for literal in self.graph.nodes:
-            self.graph.nodes[literal]["label"] = model.is_true(literal)
+            label = [1, 0] if model.is_true(literal) else [0, 1]
+            self.graph.nodes[literal]["label"] = label
 
     def encode_atoms(self):
         atom_array = np.array(list(self.atom_set)).reshape(-1, 1)
