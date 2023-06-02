@@ -5,9 +5,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import keras
+import tensorflow.keras.backend as k
 import spektral
 
-from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.losses import Hinge
 from tensorflow.keras.metrics import CategoricalAccuracy
 from tensorflow.keras.optimizers import Adam
 
@@ -22,12 +23,20 @@ class GraphNeuralNetworkHeuristic:
 
     def train_dataset(self, dataset):
         loader = spektral.data.SingleLoader(dataset)
-        model = spektral.models.gcn.GCN(2, channels=16, activation='relu', output_activation='softmax', use_bias=True, dropout_rate=0.5, l2_reg=0.00025)
+        model = spektral.models.gcn.GCN(
+            1,
+            channels=16,
+            activation='relu',
+            output_activation='tanh',
+            use_bias=True,
+            dropout_rate=0.5,
+            l2_reg=0.00025
+        )
 
         learning_rate = 1e-3
         optimizer = Adam(learning_rate)
-        loss_fn = CategoricalCrossentropy()
-        metric = CategoricalAccuracy()
+        loss_fn = Hinge()
+        metric = accuracy_fn
 
         model.compile(optimizer=optimizer, loss=loss_fn, metrics=[metric])
 
@@ -49,6 +58,12 @@ class GraphNeuralNetworkHeuristic:
         ax2.set_xlabel("Epochs")
         ax2.set_ylabel("Accuracy")
         plt.show()
+
+
+def accuracy_fn(y_true, y_pred):
+    y_pred = k.sign(y_pred)
+    y_true = k.sign(y_true)
+    return k.mean(k.equal(y_true, y_pred))
 
 
 def train_graph_neural_network(dataset):
