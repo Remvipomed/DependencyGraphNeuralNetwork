@@ -34,6 +34,7 @@ class DependencyGraph:
 
         self.graph = self.observer.graph
         nx.set_node_attributes(self.graph, None, "type")
+        nx.set_node_attributes(self.graph, False, "is_fact")
 
         rule_nodes = list()
         fact_nodes = list()
@@ -47,6 +48,7 @@ class DependencyGraph:
                 fact_nodes.append(name)
             self.graph.add_node(atom.literal)
             self.graph.nodes[atom.literal]["type"] = name
+            self.graph.nodes[atom.literal]["is_fact"] = atom.is_fact
 
         ctl.solve(on_model=self.determine_labels)
 
@@ -61,7 +63,9 @@ class DependencyGraph:
 
         labels = [attributes["type"] for _, attributes in self.graph.nodes.data()]
         label_array = np.array(labels).reshape(-1, 1)
-        features = self.encoder.transform(label_array)
+        name_encoding = self.encoder.transform(label_array).toarray()
+        fact_array = np.array([int(attributes["is_fact"]) for _, attributes in self.graph.nodes.data()])
+        features = np.column_stack([fact_array, name_encoding])
 
         for i, node_id in enumerate(self.graph.nodes()):
             node = self.graph.nodes[node_id]

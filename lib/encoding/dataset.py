@@ -32,7 +32,7 @@ class HanoiDatasetSingle(data.Dataset):
         nx_graph = dependency_graph.graph
 
         node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
-        node_features = sparse.vstack(node_feature_list).toarray()
+        node_features = np.array(node_feature_list)
         adjacency_matrix = nx.to_numpy_array(nx_graph)
         node_labels = np.array([nx_graph.nodes[node]["label"] for node in nx_graph.nodes])
 
