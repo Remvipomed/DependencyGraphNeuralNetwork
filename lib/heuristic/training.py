@@ -22,6 +22,8 @@ class GraphNeuralNetworkHeuristic:
         self.history = None
 
     def train_dataset(self, dataset):
+        labels = dataset.graphs[0]["y"]
+        print(np.count_nonzero(labels == 1), "/", len(labels))
         loader = spektral.data.SingleLoader(dataset)
         model = spektral.models.gcn.GCN(
             1,
@@ -40,8 +42,18 @@ class GraphNeuralNetworkHeuristic:
 
         model.compile(optimizer=optimizer, loss=loss_fn, metrics=[metric])
 
-        self.history = model.fit(loader.load(), steps_per_epoch=loader.steps_per_epoch, epochs=1000)
-        # self.show_history()
+        self.history = model.fit(loader.load(), steps_per_epoch=loader.steps_per_epoch, epochs=100)
+
+        prediction = model.predict(loader.load(), steps=loader.steps_per_epoch)
+        prediction_class = np.sign(np.squeeze(prediction))
+        labels_positive = (labels == 1)
+        labels_negative = (labels == -1)
+        prediction_positive = (prediction_class == 1) & labels_positive
+        prediction_negative = (prediction_class == -1) & labels_negative
+        print("positive accuracy:", np.count_nonzero(prediction_positive), "/", np.count_nonzero(labels_positive))
+        print("negative accuracy:", np.count_nonzero(prediction_negative), "/", np.count_nonzero(labels_negative))
+
+        self.show_history()
 
     def show_history(self):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
@@ -52,7 +64,7 @@ class GraphNeuralNetworkHeuristic:
         ax1.set_xlabel("Epochs")
         ax1.set_ylabel("Loss")
 
-        ax2.plot(self.history.history["accuracy"])
+        ax2.plot(self.history.history["accuracy_fn"])
         # ax2.plot(self.history.history["val_acc"])
         ax2.legend(["train"], loc="upper right")
         ax2.set_xlabel("Epochs")

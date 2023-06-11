@@ -8,7 +8,7 @@ from lib.heuristic import training
 
 
 def run_dependency_training():
-    data = dataset.HanoiDatasetSingle()
+    data = dataset.DemoSet()
     training.train_graph_neural_network(data)
 
 
