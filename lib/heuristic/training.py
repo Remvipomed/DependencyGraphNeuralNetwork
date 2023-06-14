@@ -1,51 +1,68 @@
 
+import json
 import clingo
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import keras
-import tensorflow.keras.backend as k
+import keras.backend as k
 import spektral
 
-from tensorflow.keras.losses import Hinge
-from tensorflow.keras.metrics import CategoricalAccuracy
-from tensorflow.keras.optimizers import Adam
+from spektral.models import GCN
+from keras.models import model_from_json
 
+from .. import project_root
 from . import gnn_model
 from ..encoding import graph
+from ..encoding.dataset import DemoSet
+
+
+model_path = project_root.joinpath("data/models")
 
 
 class GraphNeuralNetworkHeuristic:
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
+        self.input_shape = None
+        self.model = gnn_model.create_model()
         self.history = None
 
-    def train_dataset(self, dataset):
-        labels = dataset.graphs[0]["y"]
-        print(np.count_nonzero(labels == 1), "/", len(labels))
-        loader = spektral.data.SingleLoader(dataset)
-        model = spektral.models.gcn.GCN(
-            1,
-            channels=16,
-            activation='relu',
-            output_activation='tanh',
-            use_bias=True,
-            dropout_rate=0.5,
-            l2_reg=0.00025
-        )
+    def save(self):
+        path_config = model_path.joinpath(f"{self.name}_config.json")
+        path = model_path.joinpath(f"{self.name}.h5")
+        config = {**self.model.get_config(), "input_shape": self.input_shape}
+        path_config.write_text(json.dumps(config))
+        self.model.save_weights(path)
 
-        learning_rate = 1e-3
-        optimizer = Adam(learning_rate)
-        loss_fn = Hinge()
-        metric = accuracy_fn
+    def load(self):
+        path_config = model_path.joinpath(f"{self.name}_config.json")
+        path = model_path.joinpath(f"{self.name}.h5")
 
-        model.compile(optimizer=optimizer, loss=loss_fn, metrics=[metric])
+        model_config = json.loads(path_config.read_text())
+        input_shape = model_config.pop("input_shape")
+        self.model.from_config(model_config)
+        x_input = tf.zeros(dtype=tf.float32, shape=input_shape)
+        a_input = tf.zeros(dtype=tf.float32, shape=(input_shape[0], input_shape[0]))
+        self.model([x_input, a_input])
+        self.model.load_weights(path)
 
-        self.history = model.fit(loader.load(), steps_per_epoch=loader.steps_per_epoch, epochs=100)
+    def predict(self, ctl: clingo.Control):
+        dependency_graph = graph.create_encoded_graph(ctl)
+        spek_graph = graph.create_spektral_graph(dependency_graph)
+        prediction = self.model.predict([spek_graph])
+        return prediction
 
-        prediction = model.predict(loader.load(), steps=loader.steps_per_epoch)
+    def evaluate(self, ctl: clingo.Control):
+        dependency_graph = graph.create_labeled_graph(ctl)
+        spek_graph = graph.create_spektral_graph(dependency_graph)
+        labels = spek_graph.y
+
+        input_data = [spek_graph.x, spek_graph.a]
+        prediction = self.model.predict(input_data)
         prediction_class = np.sign(np.squeeze(prediction))
+
         labels_positive = (labels == 1)
         labels_negative = (labels == -1)
         prediction_positive = (prediction_class == 1) & labels_positive
@@ -53,6 +70,14 @@ class GraphNeuralNetworkHeuristic:
         print("positive accuracy:", np.count_nonzero(prediction_positive), "/", np.count_nonzero(labels_positive))
         print("negative accuracy:", np.count_nonzero(prediction_negative), "/", np.count_nonzero(labels_negative))
 
+    def train_dataset(self, dataset):
+        self.input_shape = dataset[0].x.shape
+        labels = dataset.graphs[0]["y"]
+        print(np.count_nonzero(labels == 1), "/", len(labels))
+        loader = spektral.data.SingleLoader(dataset)
+
+        epochs = 100
+        self.history = self.model.fit(loader.load(), steps_per_epoch=loader.steps_per_epoch, epochs=epochs)
         self.show_history()
 
     def show_history(self):
@@ -72,14 +97,10 @@ class GraphNeuralNetworkHeuristic:
         plt.show()
 
 
-def accuracy_fn(y_true, y_pred):
-    y_pred = k.sign(y_pred)
-    y_true = k.sign(y_true)
-    return k.mean(k.equal(y_true, y_pred))
-
-
-def train_graph_neural_network(dataset):
-    heuristic = GraphNeuralNetworkHeuristic()
+def train_graph_neural_network():
+    dataset = DemoSet()
+    heuristic = GraphNeuralNetworkHeuristic("demo")
     print("start training")
     heuristic.train_dataset(dataset)
+    heuristic.save()
     print("end training")
