@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 
 from sklearn.preprocessing import OneHotEncoder
+from spektral import data
 
 
 class DependencyObserver(clingo.Observer):
@@ -50,6 +51,7 @@ class DependencyGraph:
             self.graph.nodes[atom.literal]["type"] = name
             self.graph.nodes[atom.literal]["is_fact"] = atom.is_fact
 
+    def solve_for_labels(self, ctl: clingo.Control):
         ctl.solve(on_model=self.determine_labels)
 
     def determine_labels(self, model):
@@ -61,8 +63,8 @@ class DependencyGraph:
         atom_array = np.array(list(self.atom_set)).reshape(-1, 1)
         self.encoder.fit(atom_array)
 
-        labels = [attributes["type"] for _, attributes in self.graph.nodes.data()]
-        label_array = np.array(labels).reshape(-1, 1)
+        atom_names = [attributes["type"] for _, attributes in self.graph.nodes.data()]
+        label_array = np.array(atom_names).reshape(-1, 1)
         name_encoding = self.encoder.transform(label_array).toarray()
         fact_array = np.array([int(attributes["is_fact"]) for _, attributes in self.graph.nodes.data()])
         features = np.column_stack([fact_array, name_encoding])
@@ -72,8 +74,27 @@ class DependencyGraph:
             node["feature"] = features[i]
 
 
-def create_dependency_graph(ctl: clingo.Control) -> DependencyGraph:
+def create_labeled_graph(ctl: clingo.Control) -> DependencyGraph:
+    dependency_graph = DependencyGraph()
+    dependency_graph.parse_dependencies(ctl)
+    dependency_graph.encode_atoms()
+    dependency_graph.solve_for_labels(ctl)
+    return dependency_graph
+
+
+def create_encoded_graph(ctl: clingo.Control) -> DependencyGraph:
     dependency_graph = DependencyGraph()
     dependency_graph.parse_dependencies(ctl)
     dependency_graph.encode_atoms()
     return dependency_graph
+
+
+def create_spektral_graph(dependency_graph: DependencyGraph):
+    nx_graph = dependency_graph.graph
+
+    node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
+    node_features = np.array(node_feature_list)
+    adjacency_matrix = nx.to_numpy_array(nx_graph)
+    node_labels = np.array([nx_graph.nodes[node]["label"] for node in nx_graph.nodes])
+    spek_graph = data.Graph(x=node_features, a=adjacency_matrix, y=node_labels)
+    return spek_graph

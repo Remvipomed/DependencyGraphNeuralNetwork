@@ -4,7 +4,7 @@ import os
 import networkx as nx
 import numpy as np
 
-from .. import project_dir
+from .. import project_root
 from . import graph
 from spektral import data
 from scipy import sparse
@@ -21,21 +21,16 @@ class DemoSet(data.Dataset):
         super().__init__()
 
     def download(self):
-        program = project_dir.joinpath("demo.asp")
+        program = project_root.joinpath("demo.asp")
         ctl = clingo.Control()
         ctl.load(str(program))
 
-        dependency_graph = graph.create_dependency_graph(ctl)
-        nx_graph = dependency_graph.graph
-
-        node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
-        node_features = np.array(node_feature_list)
-        adjacency_matrix = nx.to_numpy_array(nx_graph)
-        node_labels = np.array([nx_graph.nodes[node]["label"] for node in nx_graph.nodes])
+        dependency_graph = graph.create_labeled_graph(ctl)
+        spek_graph = graph.create_spektral_graph(dependency_graph)
 
         os.makedirs(self.path)
         filename = os.path.join(self.path, FILENAME_DEMO)
-        np.savez(filename, x=node_features, a=adjacency_matrix, y=node_labels)
+        np.savez(filename, x=spek_graph.x, a=spek_graph.a, y=spek_graph.y)
 
     def read(self):
         spek_data = np.load(os.path.join(self.path, FILENAME_DEMO + ".npz"))
@@ -50,25 +45,20 @@ class HanoiDatasetSingle(data.Dataset):
         super().__init__()
 
     def download(self):
-        encoding = project_dir.joinpath("asp-planning-benchmarks/HanoiTower/encoding_single.asp")
-        facts = project_dir.joinpath("asp-planning-benchmarks/HanoiTower/0004-hanoi_tower-60-0.asp")
+        encoding = project_root.joinpath("asp-planning-benchmarks/HanoiTower/encoding_single.asp")
+        facts = project_root.joinpath("asp-planning-benchmarks/HanoiTower/0004-hanoi_tower-60-0.asp")
         asp_files = [encoding, facts]
 
         ctl = clingo.Control()
         for asp_file in asp_files:
             ctl.load(str(asp_file))
 
-        dependency_graph = graph.create_dependency_graph(ctl)
-        nx_graph = dependency_graph.graph
-
-        node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
-        node_features = np.array(node_feature_list)
-        adjacency_matrix = nx.to_numpy_array(nx_graph)
-        node_labels = np.array([nx_graph.nodes[node]["label"] for node in nx_graph.nodes])
+        dependency_graph = graph.create_labeled_graph(ctl)
+        spek_graph = graph.create_spektral_graph(dependency_graph)
 
         os.makedirs(self.path)
         filename = os.path.join(self.path, FILENAME_HANOI)
-        np.savez(filename, x=node_features, a=adjacency_matrix, y=node_labels)
+        np.savez(filename, x=spek_graph.x, a=spek_graph.a, y=spek_graph.y)
 
     def read(self):
         spek_data = np.load(os.path.join(self.path, FILENAME_HANOI + ".npz"))
