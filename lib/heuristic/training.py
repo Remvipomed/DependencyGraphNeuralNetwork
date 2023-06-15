@@ -45,8 +45,13 @@ class GraphNeuralNetworkHeuristic:
     def predict(self, ctl: clingo.Control):
         dependency_graph = graph.create_encoded_graph(ctl)
         spek_graph = graph.create_spektral_graph(dependency_graph)
+
         prediction = self.model.predict([spek_graph.x, spek_graph.a])
         prediction_array = np.squeeze(prediction)
+
+        dependency_graph.receive_prediction(prediction_array)
+        dependency_graph.set_heuristic(ctl)
+
         return prediction_array
 
     def evaluate(self, ctl: clingo.Control):

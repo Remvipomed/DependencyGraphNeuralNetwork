@@ -73,6 +73,17 @@ class DependencyGraph:
             node = self.graph.nodes[node_id]
             node["feature"] = features[i]
 
+    def receive_prediction(self, prediction_array):
+        for i, node_id in enumerate(self.graph.nodes):
+            node = self.graph.nodes[node_id]
+            node["prediction"] = prediction_array[i]
+
+    def set_heuristic(self, ctl: clingo.Control):
+        with ctl.backend() as backend:
+            for node_id in self.graph.nodes:
+                node = self.graph.nodes[node_id]
+                backend.add_heuristic(node_id, clingo.HeuristicType.Init, node["prediction"], 0, [])
+
 
 def create_labeled_graph(ctl: clingo.Control) -> DependencyGraph:
     dependency_graph = DependencyGraph()
