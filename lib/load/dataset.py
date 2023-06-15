@@ -4,8 +4,8 @@ import os
 import networkx as nx
 import numpy as np
 
-from .. import project_root
-from . import graph
+from lib import project_root
+from lib.encoding import graph
 from spektral import data
 from scipy import sparse
 
