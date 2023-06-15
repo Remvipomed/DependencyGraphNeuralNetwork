@@ -89,7 +89,7 @@ def create_encoded_graph(ctl: clingo.Control) -> DependencyGraph:
     return dependency_graph
 
 
-def create_spektral_graph(dependency_graph: DependencyGraph):
+def create_labeled_spektral_graph(dependency_graph: DependencyGraph):
     nx_graph = dependency_graph.graph
 
     node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
@@ -97,4 +97,14 @@ def create_spektral_graph(dependency_graph: DependencyGraph):
     adjacency_matrix = nx.to_numpy_array(nx_graph)
     node_labels = np.array([nx_graph.nodes[node]["label"] for node in nx_graph.nodes])
     spek_graph = data.Graph(x=node_features, a=adjacency_matrix, y=node_labels)
+    return spek_graph
+
+
+def create_spektral_graph(dependency_graph: DependencyGraph):
+    nx_graph = dependency_graph.graph
+
+    node_feature_list = np.array([nx_graph.nodes[node]["feature"] for node in nx_graph.nodes])
+    node_features = np.array(node_feature_list)
+    adjacency_matrix = nx.to_numpy_array(nx_graph)
+    spek_graph = data.Graph(x=node_features, a=adjacency_matrix)
     return spek_graph

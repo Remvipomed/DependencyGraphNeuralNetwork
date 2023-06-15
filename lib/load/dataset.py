@@ -26,7 +26,7 @@ class DemoSet(data.Dataset):
         ctl.load(str(program))
 
         dependency_graph = graph.create_labeled_graph(ctl)
-        spek_graph = graph.create_spektral_graph(dependency_graph)
+        spek_graph = graph.create_labeled_spektral_graph(dependency_graph)
 
         os.makedirs(self.path)
         filename = os.path.join(self.path, FILENAME_DEMO)
@@ -54,7 +54,7 @@ class HanoiDatasetSingle(data.Dataset):
             ctl.load(str(asp_file))
 
         dependency_graph = graph.create_labeled_graph(ctl)
-        spek_graph = graph.create_spektral_graph(dependency_graph)
+        spek_graph = graph.create_labeled_spektral_graph(dependency_graph)
 
         os.makedirs(self.path)
         filename = os.path.join(self.path, FILENAME_HANOI)

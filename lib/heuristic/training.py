@@ -2,20 +2,14 @@
 import json
 import clingo
 import numpy as np
-import networkx as nx
 import matplotlib.pyplot as plt
 import tensorflow as tf
-import keras
-import keras.backend as k
 import spektral
-
-from spektral.models import GCN
-from keras.models import model_from_json
 
 from .. import project_root
 from . import gnn_model
 from ..encoding import graph
-from ..encoding.dataset import DemoSet
+from lib.load.dataset import DemoSet
 
 
 model_path = project_root.joinpath("data/models")
@@ -51,12 +45,13 @@ class GraphNeuralNetworkHeuristic:
     def predict(self, ctl: clingo.Control):
         dependency_graph = graph.create_encoded_graph(ctl)
         spek_graph = graph.create_spektral_graph(dependency_graph)
-        prediction = self.model.predict([spek_graph])
-        return prediction
+        prediction = self.model.predict([spek_graph.x, spek_graph.a])
+        prediction_array = np.squeeze(prediction)
+        return prediction_array
 
     def evaluate(self, ctl: clingo.Control):
         dependency_graph = graph.create_labeled_graph(ctl)
-        spek_graph = graph.create_spektral_graph(dependency_graph)
+        spek_graph = graph.create_labeled_spektral_graph(dependency_graph)
         labels = spek_graph.y
 
         input_data = [spek_graph.x, spek_graph.a]

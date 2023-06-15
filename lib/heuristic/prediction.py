@@ -16,6 +16,14 @@ def evaluate_graph_neural_network():
 
 
 def run_heuristic():
-    model = GraphNeuralNetworkHeuristic("demo")
-    model.load()
+    program = project_root.joinpath("demo.asp")
+    ctl = clingo.Control()
+    ctl.load(str(program))
+
+    heuristic = GraphNeuralNetworkHeuristic("demo")
+    heuristic.load()
+    prediction = heuristic.predict(ctl)
+    print(prediction)
+
+
 
