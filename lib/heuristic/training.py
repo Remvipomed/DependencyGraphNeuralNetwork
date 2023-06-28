@@ -9,7 +9,7 @@ import spektral
 from .. import project_root
 from . import gnn_model
 from ..encoding import graph
-from lib.load.dataset import DemoSet
+from lib.load.dataset import DemoSet, HanoiDatasetSingle
 
 
 model_path = project_root.joinpath("data/models")
@@ -98,8 +98,8 @@ class GraphNeuralNetworkHeuristic:
 
 
 def train_graph_neural_network():
-    dataset = DemoSet()
-    heuristic = GraphNeuralNetworkHeuristic("demo")
+    dataset = HanoiDatasetSingle()
+    heuristic = GraphNeuralNetworkHeuristic("hanoi")
     print("start training")
     heuristic.train_dataset(dataset)
     heuristic.save()
