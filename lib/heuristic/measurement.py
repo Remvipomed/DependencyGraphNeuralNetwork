@@ -93,8 +93,8 @@ def compare_instance_performance(program_dict: dict) -> dict:
     print("instance:", program_dict["name"])
     instance_result = dict()
 
-    # heuristic_ctl = load_program(program_dict)
-    # instance_result["heuristic"] = run_heuristic_solving(heuristic_ctl)
+    heuristic_ctl = load_program(program_dict)
+    instance_result["heuristic"] = run_heuristic_solving(heuristic_ctl)
 
     standard_ctl = load_program(program_dict)
     instance_result["standard"] = run_standard_solving(standard_ctl)
