@@ -93,8 +93,8 @@ def compare_instance_performance(program_dict: dict) -> dict:
     print("instance:", program_dict["name"])
     instance_result = dict()
 
-    heuristic_ctl = load_program(program_dict)
-    instance_result["heuristic"] = run_heuristic_solving(heuristic_ctl)
+    # heuristic_ctl = load_program(program_dict)
+    # instance_result["heuristic"] = run_heuristic_solving(heuristic_ctl)
 
     standard_ctl = load_program(program_dict)
     instance_result["standard"] = run_standard_solving(standard_ctl)
@@ -120,3 +120,12 @@ def run_performance_measurement():
         problem_results[problem_dict["name"]] = instance_results
 
     return problem_results
+
+
+def run_single_measurement():
+    name = "HanoiTowerSingle"
+    rules = project_root / "asp-planning-benchmarks/HanoiTower/encoding_single.asp"
+    facts = project_root / "asp-planning-benchmarks/HanoiTower/0004-hanoi_tower-60-0.asp"
+    program_dict = {"name": name, "rules": rules, "facts": facts}
+    program_result = compare_instance_performance(program_dict)
+    return program_result
