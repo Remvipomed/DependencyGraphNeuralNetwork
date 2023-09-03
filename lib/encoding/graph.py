@@ -16,6 +16,7 @@ class DependencyObserver(clingo.Observer):
         # print("rule:", choice, head, body)
         for head_literal in head:
             for body_literal in body:
+                self.graph.add_edge(head_literal, body_literal)
                 self.graph.add_edge(body_literal, head_literal)
 
 
@@ -82,7 +83,7 @@ class DependencyGraph:
         with ctl.backend() as backend:
             for node_id in self.graph.nodes:
                 node = self.graph.nodes[node_id]
-                backend.add_heuristic(node_id, clingo.HeuristicType.Init, node["prediction"], 0, [])
+                backend.add_heuristic(node_id, clingo.HeuristicType.Sign, node["prediction"], 0, [])
 
 
 def create_labeled_graph(ctl: clingo.Control) -> DependencyGraph:
